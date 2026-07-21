@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>파도 너머의 약초섬 V3.3 Stage 1</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#7fc7ff;font-family:Arial,sans-serif}
+*{box-sizing:border-box;user-select:none;-webkit-user-select:none;touch-action:none}
+#game{position:fixed;inset:0}
+#hud,#toast,#mapPanel{position:fixed;color:#fff;background:rgba(0,0,0,.58);padding:10px;border-radius:12px;z-index:10}
+#hud{left:10px;top:10px;font-size:14px;line-height:1.5;max-width:240px}
+#toast{left:50%;top:12%;transform:translateX(-50%);display:none;text-align:center;max-width:82vw}
+#start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(#2784c4,#06142e);z-index:50;color:white}
+.card{background:rgba(0,0,0,.65);padding:24px;border-radius:20px;text-align:center;width:460px;max-width:92vw}
+button{border-radius:14px;border:1px solid #fff8;background:#0009;color:white;font-weight:bold}
+.card button{padding:14px;margin:6px}
+.char.sel{background:#fff5}
+#go{display:block;width:100%;margin-top:12px}
+#controls{position:fixed;left:0;right:0;bottom:10px;height:180px;z-index:20;pointer-events:none}
+.pad{position:absolute;left:14px;bottom:0;width:150px;height:150px;pointer-events:auto}
+.m{position:absolute;width:50px;height:50px;font-size:22px}
+#up{left:50px;top:0}#left{left:0;top:50px}#right{left:100px;top:50px}#down{left:50px;top:100px}
+.act{position:absolute;right:12px;bottom:0;width:320px;height:170px;pointer-events:auto}
+.act button{position:absolute;width:68px;height:62px;font-size:12px}
+#fish{right:0;bottom:98px}#talk{right:74px;bottom:98px}#boat{right:148px;bottom:98px}#sell{right:222px;bottom:98px}
+#view{right:222px;bottom:28px}#sound{right:148px;bottom:28px}#jump{right:74px;bottom:28px}#run{right:0;bottom:28px}
+#map{right:0;bottom:-42px}
+#mapPanel{right:10px;top:10px;display:none;font-size:13px;line-height:1.5;max-height:65vh;overflow:auto}
+#ending{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.9);color:white;z-index:100;text-align:center;padding:24px}
+#ending .card{background:rgba(18,35,54,.95)}
+@media(max-width:700px){
+  #hud{font-size:12px;max-width:190px}
+  .act{transform:scale(.9);transform-origin:right bottom}
+}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="hud"></div>
+<div id="toast"></div>
+<div id="mapPanel"></div>
+<div id="ending"><div class="card"><h1>🎉 GAME CLEAR</h1><p>전설의 약초물고기가 엄마를 치료했습니다.</p><p>파도 너머의 모험을 완수했어요.</p><button onclick="resetGame()">처음부터 다시하기</button></div></div>
+
+<div id="start"><div class="card">
+<h1>파도 너머의 약초섬 V3.3</h1>
+<p>낚시하고, 물고기를 팔고, 전설의 약초물고기를 찾아 엄마를 치료하세요.</p>
+<button class="char sel" data-name="승혁" data-color="#2f80ed">승혁</button>
+<button class="char" data-name="도윤" data-color="#27ae60">도윤</button>
+<button class="char" data-name="강이" data-color="#eb5757">강이</button>
+<button id="go">게임 시작</button>
+</div></div>
+
+<div id="controls">
+<div class="pad"><button class="m" id="up">▲</button><button class="m" id="left">◀</button><button class="m" id="right">▶</button><button class="m" id="down">▼</button></div>
+<div class="act">
+<button id="fish">낚시</button><button id="talk">대화</button><button id="boat">배</button><button id="sell">판매</button>
+<button id="view">시점</button><button id="sound">소리</button><button id="jump">점프</button><button id="run">달리기</button><button id="map">지도</button>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+let started=false,fp=false,soundOn=true,sel={name:'승혁',color:'#2f80ed'};
+let mv={u:0,d:0,l:0,r:0,run:0},toastT=0,jv=0,ground=1,mapOpen=false,t=0,step=0,frame=0;
+let money=0,inventory=[],boatOwned=false,onBoat=false,ending=false,fishing=false;
+const $=id=>document.getElementById(id);
+
+function say(text){$('toast').innerHTML=text;$('toast').style.display='block';toastT=180;beep(520,.05)}
+let ac;
+function beep(f=440,d=.08){
+  if(!soundOn)return;
+  try{
+    ac=ac||new(window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.frequency.value=f;g.gain.value=.035;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d);
+  }catch(e){}
+}
+function vibrate(ms=35){try{if(navigator.vibrate)navigator.vibrate(ms)}catch(e){}}
+
+const fishTable=[
+ {name:'멸치',price:20,weight:34,icon:'🐟'},
+ {name:'고등어',price:45,weight:26,icon:'🐟'},
+ {name:'도미',price:90,weight:18,icon:'🐠'},
+ {name:'참치',price:180,weight:11,icon:'🐟'},
+ {name:'황금잉어',price:500,weight:7,icon:'✨'},
+ {name:'약초물고기',price:0,weight:1,icon:'🌈',legendary:true}
+];
+
+function weightedFish(){
+  const total=fishTable.reduce((s,f)=>s+f.weight,0);
+  let r=Math.random()*total;
+  for(const f of fishTable){r-=f.weight;if(r<=0)return {...f}}
+  return {...fishTable[0]}
+}
+function nearIsland(){
+  let best=null,bd=999;
+  for(const i of islands){
+    const d=Math.hypot(player.position.x-i.x,player.position.z-i.z);
+    if(d<i.r+4&&d<bd){best=i;bd=d}
+  }
+  return best;
+}
+function hud(){
+  const n=nearIsland();
+  $('hud').innerHTML=
+   '캐릭터: '+sel.name+
+   '<br>위치: '+(n?n.name:'바다')+
+   '<br>돈: '+money+'G'+
+   '<br>물고기: '+inventory.length+'마리'+
+   '<br>배: '+(boatOwned?(onBoat?'탑승 중':'보유'):'없음')+
+   '<br>목표: 전설 물고기로 엄마 치료';
+}
+function updateMap(){
+  let txt='<b>섬 목록</b><br>';
+  for(const i of islands){
+    const d=Math.round(Math.hypot(player.position.x-i.x,player.position.z-i.z));
+    txt+=i.icon+' '+i.name+' · '+d+'m<br>';
+  }
+  $('mapPanel').innerHTML=txt;
+}
+function saveGame(){
+  localStorage.setItem('fishGameV33',JSON.stringify({money,inventory,boatOwned,sel}));
+}
+function loadGame(){
+  try{
+    const data=JSON.parse(localStorage.getItem('fishGameV33')||'null');
+    if(!data)return;
+    money=Number(data.money)||0;
+    inventory=Array.isArray(data.inventory)?data.inventory:[];
+    boatOwned=!!data.boatOwned;
+    if(data.sel)sel=data.sel;
+  }catch(e){}
+}
+function resetGame(){
+  localStorage.removeItem('fishGameV33');
+  location.reload();
+}
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x8fd3ff);
+scene.fog=new THREE.Fog(0x8fd3ff,70,360);
+const cam=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.1,600);
+const ren=new THREE.WebGLRenderer({antialias:true});
+ren.setSize(innerWidth,innerHeight);
+ren.setPixelRatio(Math.min(devicePixelRatio,2));
+ren.shadowMap.enabled=true;
+$('game').appendChild(ren.domElement);
+onresize=()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight)};
+scene.add(new THREE.HemisphereLight(0xffffff,0x335533,1.7));
+const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(50,80,30);scene.add(sun);
+
+function mat(c){return new THREE.MeshStandardMaterial({color:new THREE.Color(c),roughness:.65})}
+const seaG=new THREE.PlaneGeometry(420,420,80,80);
+const sea=new THREE.Mesh(seaG,new THREE.MeshStandardMaterial({color:0x0b78b8,roughness:.3,metalness:.1}));
+sea.rotation.x=-Math.PI/2;scene.add(sea);
+
+let islands=[];
+function tree(parent,x,z,color='#26a65b'){
+  const g=new THREE.Group();
+  const tr=new THREE.Mesh(new THREE.CylinderGeometry(.22,.38,2.8,8),mat('#6b3d1f'));
+  const le=new THREE.Mesh(new THREE.ConeGeometry(1.5,3.6,10),mat(color));
+  tr.position.y=1.5;le.position.y=4;g.add(tr,le);g.position.set(x,1,z);parent.add(g);
+}
+function rock(parent,x,z){
+  const r=new THREE.Mesh(new THREE.DodecahedronGeometry(1.1,0),mat('#7f8c8d'));
+  r.position.set(x,1.4,z);r.scale.set(1.5,.8,1.2);parent.add(r);
+}
+function island(name,type,x,z,r,color,icon){
+  const g=new THREE.Group();g.position.set(x,0,z);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(r,r*1.12,3,48),mat(color));base.position.y=.8;g.add(base);
+  const sand=new THREE.Mesh(new THREE.CylinderGeometry(r*1.12,r*1.22,.8,48),mat('#d8bd78'));sand.position.y=.15;g.add(sand);
+  const leaf=type==='hacker'?'#00ff66':type==='glitch'?'#ff46ff':type==='dawn'?'#7eeaff':type==='moon'?'#f8f1cf':'#26a65b';
+  for(let k=0;k<8;k++){const a=k*Math.PI*2/8;tree(g,Math.cos(a)*r*.55,Math.sin(a)*r*.55,leaf)}
+  if(type==='home'){
+    const h=new THREE.Mesh(new THREE.BoxGeometry(5,3.5,4),mat('#8b4b2b'));h.position.y=3.8;g.add(h);
+  }
+  if(type==='kte'){
+    const tr=new THREE.Mesh(new THREE.BoxGeometry(9,2.5,3.5),mat('#1d4ed8'));tr.position.y=3.5;g.add(tr);
+  }
+  if(type==='shop'){
+    const npc=new THREE.Mesh(new THREE.CylinderGeometry(.8,.8,3,16),mat('#f2c6a0'));npc.position.y=3;g.add(npc);
+    const hat=new THREE.Mesh(new THREE.ConeGeometry(1.4,1.1,16),mat('#5b3417'));hat.position.y=4.8;g.add(hat);
+  }
+  if(type==='lonely'){rock(g,3,2);rock(g,-4,-2)}
+  if(type==='glitch'){const sp=new THREE.Mesh(new THREE.BoxGeometry(3,3,3),mat('#00ffee'));sp.position.y=5;sp.rotation.y=.7;g.add(sp)}
+  if(type==='moon'){const moon=new THREE.Mesh(new THREE.SphereGeometry(1.2,16,16),mat('#fff2a6'));moon.position.set(0,6,0);g.add(moon)}
+  scene.add(g);islands.push({name,type,x,z,r,icon,g});
+}
+function randomSpot(existing){
+  for(let tries=0;tries<200;tries++){
+    const x=(Math.random()-.5)*300,z=(Math.random()-.5)*300;
+    let ok=Math.hypot(x,z)>65;
+    for(const e of existing)if(Math.hypot(x-e[0],z-e[1])<48)ok=false;
+    if(ok)return[x,z];
+  }
+  return[(Math.random()-.5)*260,(Math.random()-.5)*260];
+}
+let fixed=[[0,0],[35,-15],[25,28],[62,-25]];
+island('시작섬','home',0,0,17,'#9fcf63','🏠');
+island('항구섬','port',35,-15,15,'#d6b171','⚓');
+island('상점섬','shop',25,28,12,'#d6b171','👴');
+island('KTE섬','kte',62,-25,11,'#e9eef7','🚆');
+const specs=[['회복섬','recovery','#55df75','💚'],['달빛섬','moon','#e8dda3','🌕'],['새벽섬','dawn','#67d7ff','🌅'],['해커섬','hacker','#00d866','🟢'],['글리치섬','glitch','#7e4bff','🟣'],['외딴섬','lonely','#b7a16b','🏝️']];
+for(const s of specs){const p=randomSpot(fixed);fixed.push(p);island(s[0],s[1],p[0],p[1],12,s[2],s[3])}
+
+const player=new THREE.Object3D();player.position.set(0,4,0);scene.add(player);
+let model,legs=[];
+function makeChar(){
+  if(model)scene.remove(model);
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.BoxGeometry(.85,1.3,.5),mat(sel.color));body.position.y=1.55;
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.42,16,16),mat('#f2c6a0'));head.position.y=2.5;
+  const hair=new THREE.Mesh(new THREE.SphereGeometry(.44,16,8),mat('#3a2113'));hair.position.y=2.73;hair.scale.y=.42;
+  const l1=new THREE.Mesh(new THREE.BoxGeometry(.22,.72,.22),mat('#263238')),l2=l1.clone();
+  l1.position.set(-.22,.65,0);l2.position.set(.22,.65,0);legs=[l1,l2];
+  g.add(body,head,hair,l1,l2);g.scale.set(.85,.85,.85);scene.add(g);model=g;
+}
+makeChar();
+
+const mom=new THREE.Group();
+const momBody=new THREE.Mesh(new THREE.BoxGeometry(.85,1.3,.55),mat('#d26ca2'));momBody.position.y=1.55;
+const momHead=new THREE.Mesh(new THREE.SphereGeometry(.42,16,16),mat('#f2c6a0'));momHead.position.y=2.5;
+mom.add(momBody,momHead);mom.position.set(-3,3.1,1);scene.add(mom);
+
+const boat=new THREE.Group();
+const boatBody=new THREE.Mesh(new THREE.BoxGeometry(3,1,6),mat('#8b5a2b'));boatBody.position.y=.4;
+const boatTop=new THREE.Mesh(new THREE.BoxGeometry(2.2,.4,3.3),mat('#d6b171'));boatTop.position.y=1;
+boat.add(boatBody,boatTop);boat.position.set(35,2,-20);scene.add(boat);
+
+function canFish(){
+  if(onBoat)return true;
+  const n=nearIsland();
+  return !n || Math.hypot(player.position.x-n.x,player.position.z-n.z)>n.r*.72;
+}
+function fish(){
+  if(fishing)return;
+  if(!canFish()){say('물가나 배 위에서 낚시하세요.');return}
+  fishing=true;say('🎣 낚싯줄을 던졌습니다...');
+  setTimeout(()=>{
+    const f=weightedFish();
+    inventory.push(f);
+    fishing=false;
+    say(f.icon+' '+f.name+'을(를) 잡았습니다!'+(f.legendary?'<br>엄마에게 가져가세요!':''));
+    vibrate(f.legendary?180:45);beep(f.legendary?900:650,.12);saveGame();hud();
+  },900+Math.random()*1300);
+}
+function sellFish(){
+  const n=nearIsland();
+  if(!n||n.type!=='shop'){say('상점섬에서 판매할 수 있습니다.');return}
+  const sellable=inventory.filter(f=>!f.legendary);
+  if(!sellable.length){say('판매할 물고기가 없습니다.');return}
+  const earn=sellable.reduce((s,f)=>s+f.price,0);
+  inventory=inventory.filter(f=>f.legendary);
+  money+=earn;say('💰 물고기를 팔아 '+earn+'G를 벌었습니다!');beep(760,.1);saveGame();hud();
+}
+function toggleBoat(){
+  if(onBoat){onBoat=false;say('배에서 내렸습니다.');return}
+  const d=Math.hypot(player.position.x-boat.position.x,player.position.z-boat.position.z);
+  if(!boatOwned){
+    const n=nearIsland();
+    if(!n||n.type!=='port'){say('항구섬에서 배를 받을 수 있습니다.');return}
+    boatOwned=true;say('🚤 항구지기가 작은 배를 빌려주었습니다!');
+  }
+  if(d>12){boat.position.set(player.position.x,2,player.position.z-4)}
+  onBoat=true;say('🚤 배에 탔습니다.');saveGame();
+}
+function talkMom(){
+  const d=Math.hypot(player.position.x-mom.position.x,player.position.z-mom.position.z);
+  if(d>7){say('엄마에게 가까이 가세요.');return}
+  const legendary=inventory.find(f=>f.legendary);
+  if(!legendary){say('엄마: 전설의 약초물고기가 있다면 나을 수 있을 것 같구나…');return}
+  inventory=inventory.filter(f=>!f.legendary);ending=true;saveGame();
+  say('🌈 약초물고기를 엄마에게 전달했습니다!');
+  setTimeout(()=>{$('ending').style.display='flex'},1800);
+}
+
+document.querySelectorAll('.char').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.char').forEach(x=>x.classList.remove('sel'));
+  b.classList.add('sel');sel={name:b.dataset.name,color:b.dataset.color};makeChar();hud();beep();
+});
+$('go').onclick=()=>{started=true;$('start').style.display='none';hud();say('낚시를 시작해 엄마를 치료하세요!')};
+$('view').onclick=()=>{fp=!fp;say(fp?'1인칭':'3인칭');hud()};
+$('sound').onclick=()=>{soundOn=!soundOn;say(soundOn?'소리 ON':'소리 OFF');hud()};
+$('jump').onclick=()=>{if(ground&&!onBoat){jv=.16;ground=0;beep(700,.06)}};
+$('run').onclick=()=>{mv.run=!mv.run;hud();say(mv.run?'달리기 ON':'달리기 OFF')};
+$('map').onclick=()=>{mapOpen=!mapOpen;$('mapPanel').style.display=mapOpen?'block':'none';updateMap();beep()};
+$('fish').onclick=fish;$('sell').onclick=sellFish;$('boat').onclick=toggleBoat;$('talk').onclick=talkMom;
+
+function hold(id,k){
+  const e=$(id),on=x=>{x.preventDefault();mv[k]=1},off=x=>{x.preventDefault();mv[k]=0};
+  ['touchstart','mousedown'].forEach(v=>e.addEventListener(v,on,{passive:false}));
+  ['touchend','touchcancel','mouseup','mouseleave'].forEach(v=>e.addEventListener(v,off,{passive:false}));
+}
+hold('up','u');hold('down','d');hold('left','l');hold('right','r');
+
+document.addEventListener('keydown',e=>{
+  const k=e.key.toUpperCase();
+  if(k==='W')mv.u=1;if(k==='S')mv.d=1;if(k==='A')mv.l=1;if(k==='D')mv.r=1;if(k==='SHIFT')mv.run=1;
+  if(k==='V')$('view').click();if(k===' ')$('jump').click();if(k==='M')$('map').click();
+  if(k==='E')fish();if(k==='F')sellFish();if(k==='B')toggleBoat();if(k==='T')talkMom();
+});
+document.addEventListener('keyup',e=>{
+  const k=e.key.toUpperCase();
+  if(k==='W')mv.u=0;if(k==='S')mv.d=0;if(k==='A')mv.l=0;if(k==='D')mv.r=0;if(k==='SHIFT')mv.run=0;
+});
+
+function loop(){
+  requestAnimationFrame(loop);t+=.016;frame++;
+  const p=sea.geometry.attributes.position;
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i),y=p.getY(i);
+    p.setZ(i,Math.sin(x*.1+t*2)*.3+Math.cos(y*.08+t*1.5)*.22);
+  }
+  p.needsUpdate=true;
+
+  if(started&&!ending){
+    const dx=(mv.r?1:0)-(mv.l?1:0),dz=(mv.d?1:0)-(mv.u?1:0);
+    if(dx||dz){
+      const len=Math.hypot(dx,dz),sp=onBoat?.28:(mv.run?.18:.1);
+      player.position.x+=dx/len*sp;player.position.z+=dz/len*sp;player.rotation.y=Math.atan2(dx,dz);
+      step+=.16;legs[0].rotation.x=Math.sin(step*6)*.7;legs[1].rotation.x=-Math.sin(step*6)*.7;
+    }else{legs[0].rotation.x*=.8;legs[1].rotation.x*=.8}
+    if(!ground){player.position.y+=jv;jv-=.01;if(player.position.y<=4){player.position.y=4;ground=1;jv=0}}
+  }
+
+  if(onBoat){
+    boat.position.set(player.position.x,1.8,player.position.z);
+    boat.rotation.y=player.rotation.y;
+    player.position.y=4.3;
+  }
+  if(model){model.position.copy(player.position);model.rotation.y=player.rotation.y;model.visible=!fp&&!onBoat}
+  mom.rotation.y=Math.sin(t*.7)*.15;
+
+  const f=new THREE.Vector3(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y));
+  if(fp){
+    cam.position.lerp(new THREE.Vector3(player.position.x,player.position.y+2.1,player.position.z),.18);
+    cam.lookAt(player.position.x+f.x*12,player.position.y+1.8,player.position.z+f.z*12);
+  }else{
+    cam.position.lerp(new THREE.Vector3(player.position.x-f.x*9,player.position.y+6,player.position.z-f.z*11),.1);
+    cam.lookAt(player.position.x,player.position.y+1.5,player.position.z);
+  }
+  if(toastT>0){toastT--;if(toastT<=0)$('toast').style.display='none'}
+  if(mapOpen)updateMap();
+  if(frame%300===0)saveGame();
+  hud();ren.render(scene,cam);
+}
+loadGame();makeChar();hud();loop();
+</script>
+</body>
+</html>
