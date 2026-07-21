@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#08243d">
+<title>파도 너머의 약초섬 V4.0</title>
+<style>
+:root{--safe-b:env(safe-area-inset-bottom,0px);--glass:rgba(5,24,39,.72);--line:rgba(255,255,255,.2)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#061a2b;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:#fff;touch-action:none}
+button{font:inherit;color:#fff;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.05));box-shadow:0 8px 22px rgba(0,0,0,.22);backdrop-filter:blur(8px);border-radius:16px;font-weight:800;touch-action:none}
+button:active,.pressed{transform:translateY(1px) scale(.97);background:rgba(255,255,255,.25)!important}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block}
+.panel{background:var(--glass);border:1px solid var(--line);box-shadow:0 12px 35px rgba(0,0,0,.28);backdrop-filter:blur(12px);border-radius:18px}
+#hud{position:fixed;left:max(10px,env(safe-area-inset-left));top:max(10px,env(safe-area-inset-top));z-index:10;padding:10px 12px;min-width:170px;font-size:13px;line-height:1.5;pointer-events:none}
+#hud b{font-size:15px}#hud .goal{color:#a9f4c5}
+#toast{position:fixed;z-index:30;left:50%;top:max(74px,calc(env(safe-area-inset-top) + 64px));transform:translateX(-50%);padding:10px 16px;max-width:min(88vw,520px);text-align:center;font-weight:800;display:none}
+#start,#ending{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at 50% 20%,rgba(31,138,198,.35),transparent 36%),linear-gradient(160deg,#0b4f72,#041421 65%)}
+.start-card{width:min(520px,94vw);padding:26px;text-align:center}.start-card h1{margin:0 0 8px;font-size:clamp(27px,6vw,42px)}.start-card p{opacity:.86;line-height:1.55}
+.badge{display:inline-block;padding:5px 10px;border-radius:999px;background:rgba(99,224,255,.16);border:1px solid rgba(99,224,255,.32);font-size:12px;margin-bottom:12px}
+.char-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0 10px}.char{padding:13px 8px}.char.sel{outline:2px solid #76e4ff;background:rgba(118,228,255,.22)}
+#go{width:100%;padding:15px;margin-top:10px;background:linear-gradient(180deg,#25b4dd,#1375a5);font-size:17px}
+.tip{font-size:12px;opacity:.7;margin-top:12px}
+#controls{position:fixed;z-index:20;left:0;right:0;bottom:calc(8px + var(--safe-b));height:188px;pointer-events:none}
+#dpad{position:absolute;left:max(10px,env(safe-area-inset-left));bottom:0;width:152px;height:152px;pointer-events:auto}
+.move{position:absolute;width:52px;height:52px;font-size:22px}.up{left:50px;top:0}.left{left:0;top:50px}.right{left:100px;top:50px}.down{left:50px;top:100px}
+#actions{position:absolute;right:max(8px,env(safe-area-inset-right));bottom:0;width:326px;height:180px;pointer-events:auto}.action{position:absolute;width:70px;height:62px;font-size:12px}
+#fishBtn{right:0;bottom:108px;background:linear-gradient(180deg,rgba(31,192,223,.65),rgba(9,98,142,.75))}#talkBtn{right:76px;bottom:108px}#boatBtn{right:152px;bottom:108px}#sellBtn{right:228px;bottom:108px}
+#viewBtn{right:228px;bottom:38px}#soundBtn{right:152px;bottom:38px}#jumpBtn{right:76px;bottom:38px}#runBtn{right:0;bottom:38px}#mapBtn{right:0;bottom:-32px;width:70px;height:34px;border-radius:12px 12px 4px 4px}
+#mapPanel{position:fixed;right:max(10px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top));z-index:15;width:min(255px,54vw);padding:12px;display:none;font-size:12px;line-height:1.55;max-height:58vh;overflow:auto}
+#fishingUI{position:fixed;z-index:70;left:50%;bottom:calc(202px + var(--safe-b));transform:translateX(-50%);width:min(520px,92vw);padding:15px;display:none;text-align:center}
+#fishingTitle{font-weight:900;font-size:18px;margin-bottom:5px}#fishingHelp{font-size:12px;opacity:.8;min-height:20px}
+.bar{position:relative;height:23px;border-radius:999px;background:rgba(0,0,0,.43);overflow:hidden;border:1px solid rgba(255,255,255,.24);margin:11px 0}.zone{position:absolute;top:0;bottom:0;background:rgba(95,236,145,.65);border-left:2px solid #b8ffd1;border-right:2px solid #b8ffd1}.marker{position:absolute;top:-3px;width:9px;height:29px;border-radius:9px;background:#fff;box-shadow:0 0 12px #fff;transform:translateX(-50%)}
+#tensionFill,#progressFill{height:100%;width:0%;transition:width .05s linear}.labelRow{display:flex;justify-content:space-between;font-size:11px;opacity:.8}.danger{background:linear-gradient(90deg,#59d67c,#f5d45f 60%,#ff635f)}.progress{background:linear-gradient(90deg,#4fa7ff,#7cf2ff)}
+#reelBtn{width:100%;padding:13px;background:linear-gradient(180deg,#ffbf4c,#d87816);font-size:16px}
+#ending{display:none;background:rgba(2,12,20,.93)}#ending .start-card{background:rgba(8,38,55,.93)}
+#orientation{display:none;position:fixed;z-index:200;inset:0;background:#071d2e;align-items:center;justify-content:center;text-align:center;padding:30px;font-weight:800}
+@media(max-width:720px){#hud{font-size:11px;min-width:145px;padding:8px 10px}#hud b{font-size:13px}#actions{transform:scale(.86);transform-origin:right bottom}#dpad{transform:scale(.9);transform-origin:left bottom}#fishingUI{bottom:calc(180px + var(--safe-b))}}
+@media(max-width:430px){#actions{transform:scale(.78)}#dpad{transform:scale(.82)}.start-card{padding:20px}}
+@media(orientation:portrait) and (max-width:700px) and (max-height:760px){#orientation{display:flex}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud" class="panel"></div>
+<div id="toast" class="panel"></div>
+<div id="mapPanel" class="panel"></div>
+
+<div id="fishingUI" class="panel">
+  <div id="fishingTitle">🎣 낚시 준비</div>
+  <div id="fishingHelp"></div>
+  <div id="timingArea">
+    <div class="bar"><div id="catchZone" class="zone"></div><div id="timingMarker" class="marker"></div></div>
+  </div>
+  <div id="reelArea" style="display:none">
+    <div class="labelRow"><span>줄 장력</span><span>빨간 구간에 오래 머물면 줄이 끊어집니다</span></div>
+    <div class="bar"><div id="tensionFill" class="danger"></div></div>
+    <div class="labelRow"><span>끌어오기</span><span id="progressText">0%</span></div>
+    <div class="bar"><div id="progressFill" class="progress"></div></div>
+  </div>
+  <button id="reelBtn">기다리는 중…</button>
+</div>
+
+<div id="start">
+  <div class="start-card panel">
+    <div class="badge">완전 오프라인 실행 · V4.0</div>
+    <h1>파도 너머의 약초섬</h1>
+    <p>낚시하고 물고기를 팔아 섬들을 탐험하세요.<br>전설의 약초물고기를 찾아 엄마를 치료해야 합니다.</p>
+    <div class="char-row">
+      <button class="char sel" data-name="승혁" data-color="#3b8cff">승혁</button>
+      <button class="char" data-name="도윤" data-color="#38c878">도윤</button>
+      <button class="char" data-name="강이" data-color="#f05b6e">강이</button>
+    </div>
+    <button id="go">게임 시작</button>
+    <div class="tip">PC: WASD 이동 · E 낚시/릴 · F 판매 · B 배 · T 대화 · M 지도</div>
+  </div>
+</div>
+
+<div id="controls">
+  <div id="dpad">
+    <button class="move up" data-move="u">▲</button><button class="move left" data-move="l">◀</button>
+    <button class="move right" data-move="r">▶</button><button class="move down" data-move="d">▼</button>
+  </div>
+  <div id="actions">
+    <button id="fishBtn" class="action">낚시<br><small>E</small></button><button id="talkBtn" class="action">대화<br><small>T</small></button>
+    <button id="boatBtn" class="action">배<br><small>B</small></button><button id="sellBtn" class="action">판매<br><small>F</small></button>
+    <button id="viewBtn" class="action">시점</button><button id="soundBtn" class="action">소리 ON</button>
+    <button id="jumpBtn" class="action">점프</button><button id="runBtn" class="action">달리기</button><button id="mapBtn" class="action">지도</button>
+  </div>
+</div>
+
+<div id="ending">
+  <div class="start-card panel"><div class="badge">GAME CLEAR</div><h1>🌈 엄마가 건강해졌어요!</h1><p>전설의 약초물고기의 힘으로 치료에 성공했습니다.<br>파도 너머의 모험을 완수했습니다.</p><button id="resetBtn" style="width:100%;padding:14px">처음부터 다시하기</button></div>
+</div>
+<div id="orientation">📱 기기를 가로로 돌리면<br>더 편하게 플레이할 수 있어요.</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const canvas=$('game'),ctx=canvas.getContext('2d',{alpha:false});
+let W=0,H=0,DPR=1,last=performance.now(),time=0;
+let started=false,ended=false,soundOn=true,mapOpen=false,wideView=false;
+let selected={name:'승혁',color:'#3b8cff'};
+let keys={u:0,d:0,l:0,r:0,run:0};
+let money=0,inventory=[],boatOwned=false,onBoat=false;
+let player={x:0,y:0,vx:0,vy:0,dir:0,jump:0};
+let camera={x:0,y:0,zoom:1};
+let toastTimer=0,stepClock=0;
+
+const islands=[
+ {name:'시작섬',type:'home',x:0,y:0,r:118,color:'#75b85a',icon:'🏠'},
+ {name:'항구섬',type:'port',x:260,y:-95,r:92,color:'#cfb06d',icon:'⚓'},
+ {name:'상점섬',type:'shop',x:170,y:205,r:78,color:'#d0ad68',icon:'🧓'},
+ {name:'KTE섬',type:'kte',x:445,y:-165,r:72,color:'#d7e3f2',icon:'🚆'},
+ {name:'회복섬',type:'recovery',x:-335,y:-220,r:77,color:'#4bd476',icon:'💚'},
+ {name:'달빛섬',type:'moon',x:-430,y:145,r:76,color:'#dfd49b',icon:'🌕'},
+ {name:'새벽섬',type:'dawn',x:380,y:260,r:79,color:'#6dd4f3',icon:'🌅'},
+ {name:'해커섬',type:'hacker',x:40,y:-410,r:73,color:'#18c76b',icon:'🟢'},
+ {name:'글리치섬',type:'glitch',x:-145,y:390,r:76,color:'#8056e8',icon:'🟣'},
+ {name:'외딴섬',type:'lonely',x:570,y:85,r:70,color:'#a99867',icon:'🏝️'}
+];
+const mom={x:-25,y:20};
+const boat={x:248,y:-120};
+const fishTable=[
+ {name:'멸치',price:20,weight:34,icon:'🐟',difficulty:.72},
+ {name:'고등어',price:45,weight:26,icon:'🐟',difficulty:.82},
+ {name:'도미',price:90,weight:18,icon:'🐠',difficulty:.94},
+ {name:'참치',price:180,weight:11,icon:'🐟',difficulty:1.08},
+ {name:'황금잉어',price:500,weight:7,icon:'✨',difficulty:1.18},
+ {name:'약초물고기',price:0,weight:1,icon:'🌈',difficulty:1.3,legendary:true}
+];
+
+// 모바일 브라우저의 오디오 잠금을 첫 사용자 입력에서 해제한다.
+const AudioEngine={
+ ac:null,master:null,bgmTimer:null,bgmStep:0,
+ async unlock(){
+   if(!this.ac){
+     const AC=window.AudioContext||window.webkitAudioContext;
+     if(!AC)return;
+     this.ac=new AC();this.master=this.ac.createGain();this.master.gain.value=soundOn?.24:0;this.master.connect(this.ac.destination);
+   }
+   if(this.ac.state==='suspended')await this.ac.resume().catch(()=>{});
+   if(soundOn&&!this.bgmTimer)this.startBgm();
+ },
+ tone(freq=440,d=.08,type='sine',gain=.12,delay=0){
+   if(!soundOn||!this.ac||this.ac.state!=='running')return;
+   const t=this.ac.currentTime+delay,o=this.ac.createOscillator(),g=this.ac.createGain();
+   o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(gain,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+   o.connect(g);g.connect(this.master);o.start(t);o.stop(t+d+.02);
+ },
+ noise(d=.16,gain=.08){
+   if(!soundOn||!this.ac||this.ac.state!=='running')return;
+   const len=Math.floor(this.ac.sampleRate*d),buf=this.ac.createBuffer(1,len,this.ac.sampleRate),data=buf.getChannelData(0);
+   for(let i=0;i<len;i++)data[i]=(Math.random()*2-1)*(1-i/len);
+   const src=this.ac.createBufferSource(),g=this.ac.createGain();src.buffer=buf;g.gain.value=gain;src.connect(g);g.connect(this.master);src.start();
+ },
+ sfx(name){
+   if(name==='click')this.tone(520,.05,'square',.06);
+   if(name==='cast'){this.noise(.22,.1);this.tone(280,.18,'sine',.08);}
+   if(name==='bite'){this.tone(880,.09,'square',.13);this.tone(1180,.11,'square',.1,.09);}
+   if(name==='reel')this.tone(170+Math.random()*45,.045,'sawtooth',.055);
+   if(name==='catch'){[523,659,784,1047].forEach((f,i)=>this.tone(f,.16,'triangle',.11,i*.08));}
+   if(name==='legend'){[523,659,784,1047,1319].forEach((f,i)=>this.tone(f,.28,'triangle',.12,i*.12));}
+   if(name==='fail'){this.tone(260,.18,'sawtooth',.09);this.tone(150,.28,'sawtooth',.08,.14);}
+   if(name==='sell'){[620,820,1020].forEach((f,i)=>this.tone(f,.09,'square',.08,i*.07));}
+   if(name==='boat'){this.tone(120,.28,'sawtooth',.07);}
+   if(name==='jump'){this.tone(400,.07,'square',.06);this.tone(650,.08,'square',.05,.05);}
+ },
+ startBgm(){
+   if(this.bgmTimer||!this.ac)return;
+   const chords=[[196,247,294],[220,277,330],[174,220,262],[196,247,330]];
+   const play=()=>{if(!soundOn||!started||ended)return;const c=chords[this.bgmStep++%chords.length];c.forEach((f,i)=>this.tone(f,.72,'sine',.018,i*.03));};
+   play();this.bgmTimer=setInterval(play,850);
+ },
+ setEnabled(v){soundOn=v;if(this.master)this.master.gain.setTargetAtTime(v?.24:0,this.ac.currentTime,.03);if(v)this.unlock();}
+};
+
+function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*DPR;canvas.height=H*DPR;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0)}
+addEventListener('resize',resize);resize();
+function dist(a,b,c,d){return Math.hypot(a-c,b-d)}
+function nearestIsland(){let best=null,bd=Infinity;for(const i of islands){const d=dist(player.x,player.y,i.x,i.y);if(d<bd){best=i;bd=d}}return {island:best,d:bd}}
+function currentPlace(){const n=nearestIsland();return n.d<n.island.r+15?n.island.name:'바다'}
+function say(text,duration=2600){const el=$('toast');el.innerHTML=text;el.style.display='block';toastTimer=duration;AudioEngine.sfx('click')}
+function weightedFish(){let total=fishTable.reduce((s,f)=>s+f.weight,0),r=Math.random()*total;for(const f of fishTable){r-=f.weight;if(r<=0)return {...f}}return {...fishTable[0]}}
+function save(){localStorage.setItem('herbFishV40',JSON.stringify({money,inventory,boatOwned,selected,player:{x:player.x,y:player.y}}))}
+function load(){try{const d=JSON.parse(localStorage.getItem('herbFishV40')||'null');if(!d)return;money=Number(d.money)||0;inventory=Array.isArray(d.inventory)?d.inventory:[];boatOwned=!!d.boatOwned;if(d.selected)selected=d.selected;if(d.player){player.x=Number(d.player.x)||0;player.y=Number(d.player.y)||0}}catch(e){}}
+function hud(){const n=nearestIsland();$('hud').innerHTML=`<b>${selected.name}</b> · ${n.d<n.island.r+15?n.island.icon+' '+n.island.name:'🌊 바다'}<br>💰 ${money}G &nbsp; 🐟 ${inventory.length}마리<br>🚤 ${boatOwned?(onBoat?'탑승 중':'보유'):'없음'}<br><span class="goal">목표: 약초물고기로 엄마 치료</span>`}
+function updateMap(){let html='<b>🗺️ 섬 거리</b><br>';for(const i of islands){html+=`${i.icon} ${i.name} · ${Math.round(dist(player.x,player.y,i.x,i.y)/4)}m<br>`}$('mapPanel').innerHTML=html}
+
+const fishing={state:'idle',timer:0,marker:0,markerDir:1,zoneStart:.37,zoneWidth:.24,tension:.34,progress:0,fish:null,hold:false,dangerTime:0,reelTick:0};
+function canFish(){if(onBoat)return true;const n=nearestIsland();return n.d>n.island.r*.68&&n.d<n.island.r+40}
+function showFishing(){ $('fishingUI').style.display='block'; }
+function hideFishing(){ $('fishingUI').style.display='none';fishing.state='idle';fishing.hold=false; }
+function startFishing(){
+  if(!started||ended||fishing.state!=='idle')return;
+  if(!canFish()){say('🏖️ 섬 가장자리나 배 위에서 낚시할 수 있어요.');return}
+  showFishing();fishing.state='casting';fishing.timer=.9;fishing.marker=0;fishing.markerDir=1;fishing.zoneStart=.26+Math.random()*.45;fishing.zoneWidth=.18+Math.random()*.1;
+  $('fishingTitle').textContent='🎣 낚싯줄을 던지는 중';$('fishingHelp').textContent='입질이 오면 릴 버튼을 누르세요.';$('reelBtn').textContent='기다리는 중…';$('reelArea').style.display='none';$('timingArea').style.display='block';
+  AudioEngine.sfx('cast');
+}
+function bite(){fishing.state='bite';fishing.timer=2.15;fishing.marker=0;fishing.markerDir=1;$('fishingTitle').textContent='❗ 입질이 왔어요!';$('fishingHelp').textContent='흰 막대가 초록 구간에 있을 때 누르세요.';$('reelBtn').textContent='지금 낚아채기!';AudioEngine.sfx('bite');try{navigator.vibrate&&navigator.vibrate([80,40,120])}catch(e){}}
+function reelPress(v){
+  fishing.hold=v;
+  if(!v)return;
+  if(fishing.state==='idle'){startFishing();return}
+  if(fishing.state==='bite'){
+    const ok=fishing.marker>=fishing.zoneStart&&fishing.marker<=fishing.zoneStart+fishing.zoneWidth;
+    if(!ok){failFishing('타이밍을 놓쳤어요. 물고기가 도망갔습니다.');return}
+    fishing.fish=weightedFish();fishing.state='reeling';fishing.timer=8;fishing.tension=.32;fishing.progress=0;fishing.dangerTime=0;
+    $('fishingTitle').textContent='🐟 물고기와 힘겨루기!';$('fishingHelp').textContent='누르고 떼면서 장력을 조절해 물고기를 끌어오세요.';$('reelBtn').textContent='누르고 있기 · 릴 감기';$('timingArea').style.display='none';$('reelArea').style.display='block';
+  }
+}
+function failFishing(msg){AudioEngine.sfx('fail');say('💨 '+msg);$('fishingTitle').textContent='낚시 실패';$('fishingHelp').textContent=msg;fishing.state='result';fishing.timer=1.1;fishing.hold=false}
+function catchFish(){const f=fishing.fish;inventory.push(f);save();AudioEngine.sfx(f.legendary?'legend':'catch');try{navigator.vibrate&&navigator.vibrate(f.legendary?[150,60,150,60,240]:90)}catch(e){};$('fishingTitle').textContent=f.icon+' '+f.name+'을(를) 잡았습니다!';$('fishingHelp').textContent=f.legendary?'전설의 약초물고기입니다. 시작섬의 엄마에게 가져가세요!':`판매 가격 ${f.price}G`;$('reelBtn').textContent='성공!';fishing.state='result';fishing.timer=1.7;fishing.hold=false;hud()}
+function updateFishing(dt){
+  if(fishing.state==='idle')return;
+  if(fishing.state==='casting'){fishing.timer-=dt;if(fishing.timer<=0){fishing.state='waiting';fishing.timer=1.1+Math.random()*2.4;$('fishingTitle').textContent='🌊 조용히 기다리는 중';}}
+  else if(fishing.state==='waiting'){fishing.timer-=dt;if(fishing.timer<=0)bite();}
+  else if(fishing.state==='bite'){
+    fishing.timer-=dt;fishing.marker+=fishing.markerDir*dt*.78;if(fishing.marker>=1){fishing.marker=1;fishing.markerDir=-1}if(fishing.marker<=0){fishing.marker=0;fishing.markerDir=1}
+    if(fishing.timer<=0)failFishing('입질에 반응하지 못했어요.');
+  }else if(fishing.state==='reeling'){
+    const difficulty=fishing.fish.difficulty;
+    fishing.timer-=dt;fishing.reelTick-=dt;
+    if(fishing.hold){fishing.tension+=dt*(.42+difficulty*.18);fishing.progress+=dt*(.085/difficulty)*(1-Math.max(0,fishing.tension-.78)*1.7);if(fishing.reelTick<=0){AudioEngine.sfx('reel');fishing.reelTick=.14}}
+    else{fishing.tension-=dt*(.34/difficulty);fishing.progress-=dt*.018}
+    fishing.tension+=Math.sin(time*3.7+difficulty)*dt*.055*difficulty;
+    fishing.tension=Math.max(.04,Math.min(1,fishing.tension));fishing.progress=Math.max(0,Math.min(1,fishing.progress));
+    if(fishing.tension>.9)fishing.dangerTime+=dt;else fishing.dangerTime=Math.max(0,fishing.dangerTime-dt*1.8);
+    if(fishing.dangerTime>.72){failFishing('줄의 장력이 너무 높아 끊어졌어요.');return}
+    if(fishing.progress>=1){catchFish();return}
+    if(fishing.timer<=0){failFishing('물고기가 힘이 빠지기 전에 도망갔어요.');return}
+  }else if(fishing.state==='result'){fishing.timer-=dt;if(fishing.timer<=0)hideFishing()}
+  $('catchZone').style.left=(fishing.zoneStart*100)+'%';$('catchZone').style.width=(fishing.zoneWidth*100)+'%';$('timingMarker').style.left=(fishing.marker*100)+'%';
+  $('tensionFill').style.width=(fishing.tension*100)+'%';$('progressFill').style.width=(fishing.progress*100)+'%';$('progressText').textContent=Math.round(fishing.progress*100)+'%';
+}
+
+function sellFish(){const n=nearestIsland();if(n.island.type!=='shop'||n.d>n.island.r+16){say('🧓 상점섬 안에서 판매할 수 있어요.');return}const list=inventory.filter(f=>!f.legendary);if(!list.length){say('판매할 물고기가 없습니다.');return}const earn=list.reduce((s,f)=>s+f.price,0);inventory=inventory.filter(f=>f.legendary);money+=earn;AudioEngine.sfx('sell');say(`💰 ${list.length}마리를 팔아 ${earn}G를 벌었습니다!`);save();hud()}
+function toggleBoat(){
+  if(onBoat){onBoat=false;boat.x=player.x;boat.y=player.y;AudioEngine.sfx('boat');say('배에서 내렸습니다.');return}
+  const n=nearestIsland();if(!boatOwned){if(n.island.type!=='port'||n.d>n.island.r+18){say('⚓ 항구섬에서 배를 받을 수 있어요.');return}boatOwned=true;say('🚤 항구지기가 탐험용 배를 빌려주었습니다!')}
+  if(dist(player.x,player.y,boat.x,boat.y)>58){boat.x=player.x;boat.y=player.y+28}
+  onBoat=true;AudioEngine.sfx('boat');say('🚤 배에 탔습니다.');save();hud()
+}
+function talk(){const d=dist(player.x,player.y,mom.x,mom.y);if(d>55){say('🏠 시작섬의 엄마에게 가까이 가세요.');return}const legendary=inventory.find(f=>f.legendary);if(!legendary){say('엄마: 전설의 약초물고기가 있다면 나을 수 있을 것 같구나…');return}inventory=inventory.filter(f=>!f.legendary);ended=true;save();AudioEngine.sfx('legend');say('🌈 약초물고기를 엄마에게 전달했습니다!');setTimeout(()=>$('ending').style.display='flex',1200)}
+
+function worldToScreen(x,y){return {x:(x-camera.x)*camera.zoom+W/2,y:(y-camera.y)*camera.zoom+H/2}}
+function drawWater(){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#248fbd');g.addColorStop(1,'#07557e');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.globalAlpha=.2;ctx.strokeStyle='#d7f7ff';ctx.lineWidth=1;for(let y=-20;y<H+30;y+=34){ctx.beginPath();for(let x=-20;x<W+30;x+=20){const yy=y+Math.sin((x+time*55+y)*.035)*4;ctx.lineTo(x,yy)}ctx.stroke()}ctx.globalAlpha=1}
+function drawIsland(i){const p=worldToScreen(i.x,i.y),r=i.r*camera.zoom;if(p.x+r<-30||p.x-r>W+30||p.y+r<-30||p.y-r>H+30)return;ctx.save();ctx.translate(p.x,p.y);ctx.scale(1,.62);ctx.shadowColor='rgba(0,0,0,.27)';ctx.shadowBlur=18;ctx.fillStyle='#e6ca81';ctx.beginPath();ctx.arc(0,8,r*1.08,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle=i.color;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=3;ctx.stroke();ctx.restore();
+  ctx.save();ctx.translate(p.x,p.y);const count=7;for(let k=0;k<count;k++){const a=k/count*Math.PI*2+0.4,x=Math.cos(a)*r*.56,y=Math.sin(a)*r*.34;ctx.fillStyle='#5a351e';ctx.fillRect(x-2,y-8,4,14);ctx.fillStyle=i.type==='glitch'?(k%2?'#ff4be1':'#56f5ff'):i.type==='hacker'?'#16ff75':'#1b8b4c';ctx.beginPath();ctx.arc(x,y-9,8,0,Math.PI*2);ctx.fill()}
+  ctx.font=`${Math.max(20,r*.3)}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(i.icon,0,-2);ctx.font='700 12px system-ui';ctx.fillStyle='#fff';ctx.shadowColor='rgba(0,0,0,.8)';ctx.shadowBlur=4;ctx.fillText(i.name,0,r*.48);ctx.restore()}
+function drawBoat(){const p=worldToScreen(onBoat?player.x:boat.x,onBoat?player.y:boat.y);ctx.save();ctx.translate(p.x,p.y);ctx.rotate(onBoat?player.dir:0);ctx.fillStyle='#7a421f';ctx.beginPath();ctx.moveTo(0,-20);ctx.lineTo(15,15);ctx.lineTo(0,22);ctx.lineTo(-15,15);ctx.closePath();ctx.fill();ctx.fillStyle='#d7b36b';ctx.fillRect(-7,-7,14,18);ctx.restore()}
+function drawMom(){const p=worldToScreen(mom.x,mom.y);ctx.save();ctx.translate(p.x,p.y-8);ctx.fillStyle='#e8b28d';ctx.beginPath();ctx.arc(0,-13,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d35d9c';ctx.fillRect(-7,-6,14,20);ctx.font='14px system-ui';ctx.textAlign='center';ctx.fillText('엄마',0,-27);ctx.restore()}
+function drawPlayer(){if(onBoat)return;const p=worldToScreen(player.x,player.y),jumpY=Math.sin(player.jump*Math.PI)*18;ctx.save();ctx.translate(p.x,p.y-jumpY);ctx.rotate(player.dir);ctx.fillStyle='rgba(0,0,0,.24)';ctx.beginPath();ctx.ellipse(0,13,11,5,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=selected.color;ctx.fillRect(-8,-8,16,22);ctx.fillStyle='#efbd98';ctx.beginPath();ctx.arc(0,-15,8,0,Math.PI*2);ctx.fill();ctx.fillStyle='#382316';ctx.beginPath();ctx.arc(0,-18,8,Math.PI,Math.PI*2);ctx.fill();ctx.strokeStyle='#1a2630';ctx.lineWidth=4;const stride=Math.sin(stepClock*9)*5;ctx.beginPath();ctx.moveTo(-4,14);ctx.lineTo(-4+stride,23);ctx.moveTo(4,14);ctx.lineTo(4-stride,23);ctx.stroke();ctx.restore()}
+function drawFishingLine(){if(fishing.state==='idle')return;const p=worldToScreen(player.x,player.y),a=player.dir-Math.PI/2,end={x:p.x+Math.cos(a)*85,y:p.y+Math.sin(a)*55};ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(p.x,p.y-12);ctx.quadraticCurveTo((p.x+end.x)/2,p.y-70,end.x,end.y);ctx.stroke();ctx.fillStyle='#ff5e5e';ctx.beginPath();ctx.arc(end.x,end.y,4+Math.sin(time*7)*1.5,0,Math.PI*2);ctx.fill()}
+function render(){drawWater();for(const i of islands)drawIsland(i);drawBoat();drawMom();drawPlayer();drawFishingLine()}
+function update(dt){time+=dt;if(started&&!ended&&fishing.state==='idle'){
+  let dx=keys.r-keys.l,dy=keys.d-keys.u;if(dx||dy){const l=Math.hypot(dx,dy);dx/=l;dy/=l;const sp=(onBoat?155:(keys.run?125:78))*dt;player.x+=dx*sp;player.y+=dy*sp;player.dir=Math.atan2(dy,dx)+Math.PI/2;stepClock+=dt*(keys.run?2:1);if(onBoat){boat.x=player.x;boat.y=player.y}}
+  player.x=Math.max(-680,Math.min(680,player.x));player.y=Math.max(-520,Math.min(520,player.y));
+  if(player.jump>0){player.jump-=dt*1.8;if(player.jump<0)player.jump=0}
+ }
+  const targetZoom=wideView?.65:(W<600?.82:1);camera.zoom+=(targetZoom-camera.zoom)*Math.min(1,dt*4);camera.x+=(player.x-camera.x)*Math.min(1,dt*4);camera.y+=(player.y-camera.y)*Math.min(1,dt*4);
+  updateFishing(dt);if(toastTimer>0){toastTimer-=dt*1000;if(toastTimer<=0)$('toast').style.display='none'}if(mapOpen)updateMap();hud();
+}
+function frame(now){const dt=Math.min(.035,(now-last)/1000);last=now;update(dt);render();requestAnimationFrame(frame)}requestAnimationFrame(frame);
+
+function bindHold(el,on,off){el.addEventListener('pointerdown',e=>{e.preventDefault();el.setPointerCapture?.(e.pointerId);el.classList.add('pressed');on()});['pointerup','pointercancel','lostpointercapture'].forEach(n=>el.addEventListener(n,e=>{e.preventDefault();el.classList.remove('pressed');off()}))}
+document.querySelectorAll('[data-move]').forEach(b=>{const k=b.dataset.move;bindHold(b,()=>keys[k]=1,()=>keys[k]=0)});
+bindHold($('reelBtn'),()=>reelPress(true),()=>reelPress(false));
+$('fishBtn').addEventListener('pointerdown',e=>{e.preventDefault();AudioEngine.unlock();if(fishing.state==='idle')startFishing();else reelPress(true)});$('fishBtn').addEventListener('pointerup',()=>reelPress(false));
+$('sellBtn').onclick=()=>{AudioEngine.unlock();sellFish()};$('boatBtn').onclick=()=>{AudioEngine.unlock();toggleBoat()};$('talkBtn').onclick=()=>{AudioEngine.unlock();talk()};
+$('viewBtn').onclick=()=>{wideView=!wideView;say(wideView?'넓은 시점':'가까운 시점')};
+$('soundBtn').onclick=()=>{AudioEngine.setEnabled(!soundOn);$('soundBtn').textContent=soundOn?'소리 ON':'소리 OFF';if(soundOn)AudioEngine.sfx('click')};
+$('jumpBtn').onclick=()=>{if(!onBoat&&player.jump<=0){player.jump=1;AudioEngine.sfx('jump')}};
+$('runBtn').onclick=()=>{keys.run=keys.run?0:1;$('runBtn').classList.toggle('pressed',!!keys.run);say(keys.run?'달리기 ON':'달리기 OFF')};
+$('mapBtn').onclick=()=>{mapOpen=!mapOpen;$('mapPanel').style.display=mapOpen?'block':'none';if(mapOpen)updateMap();AudioEngine.sfx('click')};
+
+document.querySelectorAll('.char').forEach(b=>b.onclick=()=>{document.querySelectorAll('.char').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');selected={name:b.dataset.name,color:b.dataset.color};AudioEngine.unlock();AudioEngine.sfx('click');hud()});
+$('go').onclick=async()=>{await AudioEngine.unlock();started=true;$('start').style.display='none';AudioEngine.startBgm();say('🎣 섬 가장자리에서 낚시를 시작하세요!');hud()};
+$('resetBtn').onclick=()=>{localStorage.removeItem('herbFishV40');location.reload()};
+
+document.addEventListener('pointerdown',()=>AudioEngine.unlock(),{passive:true});
+document.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();if(['w','a','s','d','e','f','b','t','m',' ','shift'].includes(k))e.preventDefault();
+  if(k==='w'||e.key==='ArrowUp')keys.u=1;if(k==='s'||e.key==='ArrowDown')keys.d=1;if(k==='a'||e.key==='ArrowLeft')keys.l=1;if(k==='d'||e.key==='ArrowRight')keys.r=1;if(k==='shift')keys.run=1;
+  if((k==='e'||k===' ')&&!e.repeat){if(fishing.state==='idle')startFishing();else reelPress(true)}
+  if(k==='f'&&!e.repeat)sellFish();if(k==='b'&&!e.repeat)toggleBoat();if(k==='t'&&!e.repeat)talk();if(k==='m'&&!e.repeat)$('mapBtn').click();if(k==='v'&&!e.repeat)$('viewBtn').click();
+});
+document.addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(k==='w'||e.key==='ArrowUp')keys.u=0;if(k==='s'||e.key==='ArrowDown')keys.d=0;if(k==='a'||e.key==='ArrowLeft')keys.l=0;if(k==='d'||e.key==='ArrowRight')keys.r=0;if(k==='shift')keys.run=0;if(k==='e'||k===' ')reelPress(false)});
+
+load();hud();
+</script>
+</body>
+</html>
