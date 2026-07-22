@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a4367">
+<title>파도 너머의 약초섬 V4.3 3D 다리·소리</title>
+<style>
+:root{--glass:rgba(4,24,42,.78);--line:rgba(255,255,255,.22);--safe-b:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071c2e;color:#fff;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;touch-action:none}
+button{font:inherit;color:#fff;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.06));border-radius:16px;font-weight:800;box-shadow:0 7px 20px rgba(0,0,0,.24);backdrop-filter:blur(8px);touch-action:none}
+button:active,.pressed{transform:scale(.96);background:rgba(255,255,255,.27)!important}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;background:linear-gradient(#63c7ed,#187aac)}
+.panel{background:var(--glass);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 32px rgba(0,0,0,.27);backdrop-filter:blur(12px)}
+#hud{position:fixed;z-index:20;left:max(10px,env(safe-area-inset-left));top:max(10px,env(safe-area-inset-top));padding:10px 12px;min-width:190px;font-size:13px;line-height:1.5;pointer-events:none}
+#hud b{font-size:16px}#hud .goal{color:#b7ffd0}
+#toast{position:fixed;z-index:70;left:50%;top:max(72px,calc(env(safe-area-inset-top) + 62px));transform:translateX(-50%);padding:10px 16px;max-width:min(90vw,560px);display:none;text-align:center;font-weight:900}
+#start,#ending{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at 50% 15%,rgba(70,194,242,.35),transparent 35%),linear-gradient(155deg,#0b557e,#061525 68%)}
+.start-card{width:min(560px,94vw);padding:26px;text-align:center}.start-card h1{font-size:clamp(28px,6vw,43px);margin:2px 0 8px}.start-card p{line-height:1.55;opacity:.9}.badge{display:inline-block;padding:5px 11px;border-radius:999px;background:rgba(96,225,255,.16);border:1px solid rgba(96,225,255,.35);font-size:12px}
+.char-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0 10px}.char{padding:13px 8px}.char.sel{outline:2px solid #75e8ff;background:rgba(117,232,255,.22)}
+#go{width:100%;padding:15px;margin-top:10px;background:linear-gradient(180deg,#25b9e6,#126f9f);font-size:17px}.tip{font-size:12px;line-height:1.55;opacity:.75;margin-top:12px}
+#controls{position:fixed;z-index:40;left:0;right:0;bottom:calc(8px + var(--safe-b));height:188px;pointer-events:none}
+#dpad{position:absolute;left:max(10px,env(safe-area-inset-left));bottom:0;width:152px;height:152px;pointer-events:auto}.move{position:absolute;width:52px;height:52px;font-size:22px}.up{left:50px;top:0}.left{left:0;top:50px}.right{left:100px;top:50px}.down{left:50px;top:100px}
+#actions{position:absolute;right:max(8px,env(safe-area-inset-right));bottom:0;width:326px;height:180px;pointer-events:auto}.action{position:absolute;width:70px;height:62px;font-size:12px}
+#fishBtn{right:0;bottom:108px;background:linear-gradient(180deg,rgba(33,196,227,.72),rgba(9,92,142,.82))}#talkBtn{right:76px;bottom:108px}#boatBtn{right:152px;bottom:108px}#shopBtn{right:228px;bottom:108px}
+#viewBtn{right:228px;bottom:38px}#bagBtn{right:152px;bottom:38px}#jumpBtn{right:76px;bottom:38px}#runBtn{right:0;bottom:38px}#soundBtn{right:76px;bottom:-32px;width:70px;height:34px;border-radius:12px 12px 4px 4px}#mapBtn{right:0;bottom:-32px;width:70px;height:34px;border-radius:12px 12px 4px 4px}
+#mapPanel{position:fixed;z-index:35;right:max(10px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top));width:min(270px,56vw);max-height:58vh;overflow:auto;padding:12px;display:none;font-size:12px;line-height:1.6}
+#fishUI{position:fixed;z-index:80;left:50%;bottom:calc(205px + var(--safe-b));transform:translateX(-50%);width:min(620px,94vw);padding:16px;text-align:center;display:none}
+#fishIcon{font-size:54px;line-height:1}#fishTitle{font-size:21px;font-weight:950;margin:6px 0}#fishHelp{font-size:13px;opacity:.88;min-height:22px}#fishSeq{font-size:clamp(18px,4.3vw,28px);font-weight:950;letter-spacing:7px;line-height:1.7;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);padding:10px;border-radius:14px;margin:10px 0;word-break:break-word}.doneKey{color:#7effbd}.nextKey{display:inline-block;color:#ffe174;transform:scale(1.18)}#fishKeys{display:flex;flex-wrap:wrap;justify-content:center;gap:7px}.fishKey{width:48px;height:44px;border-radius:12px;font-size:18px}.fishKey.current{outline:3px solid #ffe174;background:rgba(255,207,54,.28)}
+.modal{position:fixed;z-index:85;left:50%;top:50%;transform:translate(-50%,-50%);width:min(430px,92vw);max-height:72vh;overflow:auto;padding:18px;display:none}.modal h2{margin:0 0 10px}.modal button{width:100%;padding:12px;margin-top:9px}.modal .close{background:rgba(255,255,255,.08)}.itemRow{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.13)}
+#ending{display:none;background:rgba(2,12,20,.94)}
+#webglError{position:fixed;z-index:300;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:30px;background:#071d2e;font-weight:800;line-height:1.6}
+@media(max-width:720px){#hud{font-size:11px;min-width:150px;padding:8px 10px}#hud b{font-size:13px}#actions{transform:scale(.86);transform-origin:right bottom}#dpad{transform:scale(.9);transform-origin:left bottom}#fishUI{bottom:calc(180px + var(--safe-b))}}
+@media(max-width:430px){#actions{transform:scale(.78)}#dpad{transform:scale(.82)}.start-card{padding:20px}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud" class="panel"></div>
+<div id="toast" class="panel"></div>
+<div id="mapPanel" class="panel"></div>
+
+<div id="fishUI" class="panel">
+  <div id="fishIcon">🎣</div>
+  <div id="fishTitle">키보드 낚시</div>
+  <div id="fishHelp">화면에 표시된 키를 왼쪽부터 순서대로 누르세요.</div>
+  <div id="fishSeq"></div>
+  <div id="fishKeys"></div>
+</div>
+
+<div id="start">
+  <div class="start-card panel">
+    <div class="badge">진짜 WebGL 3D · 자연스러운 다리 · 효과음 · V4.3</div>
+    <h1>파도 너머의 약초섬</h1>
+    <p>3D 섬과 바다를 달리고 배로 탐험하세요.<br>버전2처럼 표시된 키를 순서대로 눌러 물고기를 잡습니다.</p>
+    <div class="char-row">
+      <button class="char sel" data-name="승혁" data-color="0x3b8cff">승혁</button>
+      <button class="char" data-name="도윤" data-color="0x38c878">도윤</button>
+      <button class="char" data-name="강이" data-color="0xf05b6e">강이</button>
+    </div>
+    <button id="go">게임 시작</button>
+    <div class="tip">키보드: WASD/방향키 이동 · Shift 달리기 · F 낚시 · P 상점 · B 배 · M 엄마 · G 가방 · H 지도 · V 시점 · Space 점프 · O 소리</div>
+  </div>
+</div>
+
+<div id="controls">
+  <div id="dpad">
+    <button class="move up" data-move="u">▲</button><button class="move left" data-move="l">◀</button>
+    <button class="move right" data-move="r">▶</button><button class="move down" data-move="d">▼</button>
+  </div>
+  <div id="actions">
+    <button id="fishBtn" class="action">낚시<br><small>F</small></button><button id="talkBtn" class="action">엄마<br><small>M</small></button>
+    <button id="boatBtn" class="action">배<br><small>B</small></button><button id="shopBtn" class="action">상점<br><small>P</small></button>
+    <button id="viewBtn" class="action">시점<br><small>V</small></button><button id="bagBtn" class="action">가방<br><small>G</small></button>
+    <button id="jumpBtn" class="action">점프<br><small>Space</small></button><button id="runBtn" class="action">달리기<br><small>Shift</small></button><button id="soundBtn" class="action">소리 O</button><button id="mapBtn" class="action">지도 H</button>
+  </div>
+</div>
+
+<div id="bagPanel" class="panel modal">
+  <h2>🎒 가방</h2><div id="bagContents"></div>
+  <button id="bagClose" class="close">닫기 · G</button>
+</div>
+<div id="shopPanel" class="panel modal">
+  <h2>🧓 상점</h2><div id="shopInfo"></div>
+  <button id="sellAllBtn">물고기 모두 판매</button>
+  <button id="upgradeBtn">낚싯대 강화 · 300G</button>
+  <button id="shopClose" class="close">닫기 · P</button>
+</div>
+
+<div id="ending">
+  <div class="start-card panel"><div class="badge">GAME CLEAR</div><h1>🌈 엄마가 건강해졌어요!</h1><p>전설의 약초물고기의 힘으로 치료에 성공했습니다.<br>승혁과 친구들의 섬 모험이 완성되었습니다.</p><button id="resetBtn" style="width:100%;padding:14px">처음부터 다시하기</button></div>
+</div>
+<div id="webglError">이 기기에서 3D 화면을 시작하지 못했습니다.<br>Safari를 새로고침한 뒤 다시 실행해 주세요.</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const canvas=$('game');
+let gl;
+try{gl=canvas.getContext('webgl',{antialias:true,alpha:false,powerPreference:'high-performance'})||canvas.getContext('experimental-webgl');}catch(e){}
+if(!gl){$('webglError').style.display='flex';throw new Error('WebGL unavailable');}
+
+// ===== 4x4 행렬 계산 =====
+const M={
+ identity(){return new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1])},
+ multiply(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[0*4+r]*b[c*4+0]+a[1*4+r]*b[c*4+1]+a[2*4+r]*b[c*4+2]+a[3*4+r]*b[c*4+3];return o},
+ translate(x,y,z){const o=this.identity();o[12]=x;o[13]=y;o[14]=z;return o},
+ scale(x,y,z){const o=this.identity();o[0]=x;o[5]=y;o[10]=z;return o},
+ rotY(a){const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1])},
+ rotX(a){const c=Math.cos(a),s=Math.sin(a);return new Float32Array([1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1])},
+ perspective(fovy,aspect,near,far){const f=1/Math.tan(fovy/2),nf=1/(near-far);return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0])},
+ lookAt(eye,target,up=[0,1,0]){let zx=eye[0]-target[0],zy=eye[1]-target[1],zz=eye[2]-target[2];let l=Math.hypot(zx,zy,zz)||1;zx/=l;zy/=l;zz/=l;let xx=up[1]*zz-up[2]*zy,xy=up[2]*zx-up[0]*zz,xz=up[0]*zy-up[1]*zx;l=Math.hypot(xx,xy,xz)||1;xx/=l;xy/=l;xz/=l;let yx=zy*xz-zz*xy,yy=zz*xx-zx*xz,yz=zx*xy-zy*xx;return new Float32Array([xx,yx,zx,0,xy,yy,zy,0,xz,yz,zz,0,-(xx*eye[0]+xy*eye[1]+xz*eye[2]),-(yx*eye[0]+yy*eye[1]+yz*eye[2]),-(zx*eye[0]+zy*eye[1]+zz*eye[2]),1])},
+ trs(x,y,z,ry,sx,sy,sz){return this.multiply(this.multiply(this.translate(x,y,z),this.rotY(ry)),this.scale(sx,sy,sz))}
+};
+
+// ===== WebGL 셰이더 =====
+const vs=`
+attribute vec3 aPos;
+attribute vec3 aNormal;
+uniform mat4 uProj,uView,uModel;
+uniform vec3 uColor;
+uniform float uTime,uWater;
+varying vec3 vColor;
+varying float vFog;
+void main(){
+ vec3 p=aPos;
+ if(uWater>0.5){p.y+=sin((p.x+uTime*3.0)*0.18)*0.16+cos((p.z-uTime*2.2)*0.22)*0.11;}
+ vec4 world=uModel*vec4(p,1.0);
+ vec3 n=normalize(mat3(uModel)*aNormal);
+ vec3 lightDir=normalize(vec3(0.35,1.0,0.45));
+ float light=0.54+max(dot(n,lightDir),0.0)*0.58;
+ vColor=uColor*light;
+ vec4 viewPos=uView*world;
+ vFog=clamp((-viewPos.z-70.0)/420.0,0.0,1.0);
+ gl_Position=uProj*viewPos;
+}`;
+const fs=`
+precision mediump float;
+varying vec3 vColor;
+varying float vFog;
+void main(){vec3 fog=vec3(0.47,0.78,0.91);gl_FragColor=vec4(mix(vColor,fog,vFog),1.0);}`;
+function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s}
+const program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vs));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,fs));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(program));gl.useProgram(program);
+const loc={pos:gl.getAttribLocation(program,'aPos'),normal:gl.getAttribLocation(program,'aNormal'),proj:gl.getUniformLocation(program,'uProj'),view:gl.getUniformLocation(program,'uView'),model:gl.getUniformLocation(program,'uModel'),color:gl.getUniformLocation(program,'uColor'),time:gl.getUniformLocation(program,'uTime'),water:gl.getUniformLocation(program,'uWater')};
+
+function mesh(pos,norm){const m={count:pos.length/3,p:gl.createBuffer(),n:gl.createBuffer()};gl.bindBuffer(gl.ARRAY_BUFFER,m.p);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(pos),gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,m.n);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(norm),gl.STATIC_DRAW);return m}
+function addTri(P,N,a,b,c,n){P.push(...a,...b,...c);N.push(...n,...n,...n)}
+function boxMesh(){const P=[],N=[];const f=(a,b,c,d,n)=>{addTri(P,N,a,b,c,n);addTri(P,N,a,c,d,n)};f([-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1],[0,0,1]);f([1,-1,-1],[-1,-1,-1],[-1,1,-1],[1,1,-1],[0,0,-1]);f([-1,1,1],[1,1,1],[1,1,-1],[-1,1,-1],[0,1,0]);f([-1,-1,-1],[1,-1,-1],[1,-1,1],[-1,-1,1],[0,-1,0]);f([1,-1,1],[1,-1,-1],[1,1,-1],[1,1,1],[1,0,0]);f([-1,-1,-1],[-1,-1,1],[-1,1,1],[-1,1,-1],[-1,0,0]);return mesh(P,N)}
+function cylinderMesh(seg=20,topR=1,bottomR=1){const P=[],N=[];for(let i=0;i<seg;i++){const a=i/seg*Math.PI*2,b=(i+1)/seg*Math.PI*2,ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b);addTri(P,N,[bottomR*ca,-1,bottomR*sa],[bottomR*cb,-1,bottomR*sb],[topR*cb,1,topR*sb],[ca,0,sa]);addTri(P,N,[bottomR*ca,-1,bottomR*sa],[topR*cb,1,topR*sb],[topR*ca,1,topR*sa],[ca,0,sa]);addTri(P,N,[0,1,0],[topR*ca,1,topR*sa],[topR*cb,1,topR*sb],[0,1,0]);addTri(P,N,[0,-1,0],[bottomR*cb,-1,bottomR*sb],[bottomR*ca,-1,bottomR*sa],[0,-1,0]);}return mesh(P,N)}
+function sphereMesh(lat=10,lon=16){const P=[],N=[];for(let y=0;y<lat;y++){const v0=y/lat*Math.PI-Math.PI/2,v1=(y+1)/lat*Math.PI-Math.PI/2;for(let x=0;x<lon;x++){const u0=x/lon*Math.PI*2,u1=(x+1)/lon*Math.PI*2;const q=(u,v)=>[Math.cos(v)*Math.cos(u),Math.sin(v),Math.cos(v)*Math.sin(u)];const a=q(u0,v0),b=q(u1,v0),c=q(u1,v1),d=q(u0,v1);addTri(P,N,a,b,c,a);addTri(P,N,a,c,d,a)}}return mesh(P,N)}
+function planeMesh(){return mesh([-1,0,-1,1,0,-1,1,0,1,-1,0,-1,1,0,1,-1,0,1],[0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0])}
+const meshes={box:boxMesh(),cyl:cylinderMesh(),cone:cylinderMesh(20,0,1),sphere:sphereMesh(),plane:planeMesh()};
+function hex(c){return[(c>>16&255)/255,(c>>8&255)/255,(c&255)/255]}
+function draw(meshObj,model,color,water=0){gl.bindBuffer(gl.ARRAY_BUFFER,meshObj.p);gl.enableVertexAttribArray(loc.pos);gl.vertexAttribPointer(loc.pos,3,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,meshObj.n);gl.enableVertexAttribArray(loc.normal);gl.vertexAttribPointer(loc.normal,3,gl.FLOAT,false,0,0);gl.uniformMatrix4fv(loc.model,false,model);gl.uniform3fv(loc.color,hex(color));gl.uniform1f(loc.water,water);gl.drawArrays(gl.TRIANGLES,0,meshObj.count)}
+function local(group,x,y,z,ry,sx,sy,sz){return M.multiply(group,M.trs(x,y,z,ry,sx,sy,sz))}
+
+// ===== 게임 상태 =====
+let W=0,H=0,DPR=1,time=0,last=performance.now(),started=false,ended=false,mapOpen=false,wideView=false;
+let selected={name:'승혁',color:0x3b8cff};
+const keys={u:0,d:0,l:0,r:0,run:0};
+let money=0,inventory=[],onBoat=false,boatOwned=true,rodLevel=0;
+const player={x:0,z:0,yaw:Math.PI,jump:0,jumping:false,step:0,moving:false,footTimer:0};
+const boat={x:0,z:42,yaw:Math.PI};
+const camera={x:0,y:14,z:22,tx:0,ty:2,tz:0};
+const islands=[
+ {name:'시작섬',type:'home',x:0,z:0,r:31,grass:0x75b85a},
+ {name:'항구섬',type:'port',x:78,z:-28,r:24,grass:0xcaa861},
+ {name:'상점섬',type:'shop',x:52,z:61,r:22,grass:0xc8a360},
+ {name:'KTE섬',type:'kte',x:130,z:-48,r:20,grass:0xc8d7e7},
+ {name:'회복섬',type:'recovery',x:-92,z:-67,r:21,grass:0x4dce73},
+ {name:'달빛섬',type:'moon',x:-118,z:42,r:22,grass:0xd8cc8d},
+ {name:'새벽섬',type:'dawn',x:108,z:82,r:22,grass:0xea9a66},
+ {name:'글리치섬',type:'glitch',x:-18,z:-132,r:18,grass:0xa36ee8},
+ {name:'해커섬',type:'hacker',x:18,z:139,r:18,grass:0x34b96b},
+ {name:'외딴섬',type:'remote',x:-144,z:-10,r:16,grass:0x91a879}
+];
+const mom={x:-7,z:1};
+const fishTable=[
+ {name:'은빛 정어리',price:18,len:3,kind:'normal',color:0xb8d7e8,legendary:false},
+ {name:'산호 도미',price:32,len:4,kind:'normal',color:0xff8d70,legendary:false},
+ {name:'달빛 고등어',price:55,len:5,kind:'normal',color:0xa6b5ff,legendary:false},
+ {name:'새벽 참치',price:90,len:7,kind:'rare',color:0xffb45d,legendary:false},
+ {name:'해커 물고기',price:150,len:8,kind:'hacker',color:0x32ff7d,legendary:false},
+ {name:'글리치 물고기',price:180,len:10,kind:'glitch',color:0x55f4ff,legendary:false},
+ {name:'약초물고기',price:0,len:9,kind:'legend',color:0x6dff91,legendary:true}
+];
+const letterPool=['Q','E','R','F','Z','X','C','V'];
+const numberPool=['0','1','2','3','4','5','6','7','8','9'];
+function dist(x,z,x2,z2){return Math.hypot(x-x2,z-z2)}
+function nearestIsland(x=player.x,z=player.z){let best=null,d=1e9;for(const i of islands){const q=dist(x,z,i.x,i.z);if(q<d){d=q;best=i}}return{island:best,d}}
+function islandAt(x,z,pad=0){return islands.find(i=>dist(x,z,i.x,i.z)<=i.r-pad)||null}
+function save(){try{localStorage.setItem('herbFishV42',JSON.stringify({money,inventory,onBoat:false,boatOwned:true,rodLevel,player:{x:player.x,z:player.z},selected}))}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem('herbFishV42')||'null');if(!s)return;money=Number(s.money)||0;inventory=Array.isArray(s.inventory)?s.inventory:[];rodLevel=Number(s.rodLevel)||0;boatOwned=true;if(s.player){player.x=Number(s.player.x)||0;player.z=Number(s.player.z)||0}if(s.selected)selected=s.selected}catch(e){}}
+function resetGame(){try{localStorage.removeItem('herbFishV42')}catch(e){}location.reload()}
+
+// ===== 오프라인 Web Audio: 배경 바다음 + 효과음 =====
+const AudioEngine={
+ ctx:null,enabled:true,ambient:null,ambientGain:null,
+ unlock(){
+  if(!this.enabled)return;
+  try{
+   this.ctx=this.ctx||new(window.AudioContext||window.webkitAudioContext)();
+   if(this.ctx.state==='suspended')this.ctx.resume();
+   this.startAmbient();
+  }catch(e){}
+ },
+ startAmbient(){
+  if(!this.enabled||!this.ctx||this.ambient)return;
+  const length=Math.max(1,Math.floor(this.ctx.sampleRate*2));
+  const buffer=this.ctx.createBuffer(1,length,this.ctx.sampleRate),data=buffer.getChannelData(0);
+  let last=0;
+  for(let i=0;i<length;i++){const white=Math.random()*2-1;last=(last*.985+white*.015);data[i]=last*.9}
+  const src=this.ctx.createBufferSource(),filter=this.ctx.createBiquadFilter(),gain=this.ctx.createGain();
+  src.buffer=buffer;src.loop=true;filter.type='lowpass';filter.frequency.value=520;gain.gain.value=.045;
+  src.connect(filter);filter.connect(gain);gain.connect(this.ctx.destination);src.start();
+  this.ambient=src;this.ambientGain=gain;
+ },
+ tone(freq=440,dur=.09,vol=.055,type='sine',delay=0){
+  if(!this.enabled)return;this.unlock();if(!this.ctx)return;
+  const t=this.ctx.currentTime+delay,o=this.ctx.createOscillator(),g=this.ctx.createGain();
+  o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g);g.connect(this.ctx.destination);o.start(t);o.stop(t+dur+.02);
+ },
+ noise(dur=.07,vol=.035,high=900){
+  if(!this.enabled)return;this.unlock();if(!this.ctx)return;
+  const len=Math.max(1,Math.floor(this.ctx.sampleRate*dur)),buf=this.ctx.createBuffer(1,len,this.ctx.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);
+  const s=this.ctx.createBufferSource(),f=this.ctx.createBiquadFilter(),g=this.ctx.createGain();s.buffer=buf;f.type='lowpass';f.frequency.value=high;g.gain.value=vol;s.connect(f);f.connect(g);g.connect(this.ctx.destination);s.start();
+ },
+ sfx(name){
+  if(!this.enabled)return;
+  if(name==='step'){this.noise(.055,.024,500);this.tone(105,.045,.018,'triangle')}
+  else if(name==='run'){this.noise(.05,.032,650);this.tone(125,.04,.022,'triangle')}
+  else if(name==='jump'){this.tone(310,.08,.045,'sine');this.tone(520,.12,.035,'sine',.06)}
+  else if(name==='cast'){this.noise(.11,.04,1500);this.tone(260,.11,.035,'sine')}
+  else if(name==='key'){this.tone(620,.055,.035,'square')}
+  else if(name==='wrong'){this.tone(170,.17,.06,'sawtooth');this.tone(115,.2,.045,'sawtooth',.08)}
+  else if(name==='catch'){this.tone(523,.1,.05,'triangle');this.tone(659,.1,.05,'triangle',.08);this.tone(784,.18,.055,'triangle',.16)}
+  else if(name==='legend'){[523,659,784,1047].forEach((f,i)=>this.tone(f,.22,.055,'sine',i*.1))}
+  else if(name==='coin'){this.tone(880,.07,.045,'square');this.tone(1175,.12,.04,'square',.07)}
+  else if(name==='boat'){this.tone(145,.18,.045,'sawtooth');this.noise(.18,.025,700)}
+  else if(name==='upgrade'){[392,523,659].forEach((f,i)=>this.tone(f,.15,.05,'triangle',i*.1))}
+  else if(name==='heal'){[392,523,659,784,1047].forEach((f,i)=>this.tone(f,.3,.05,'sine',i*.12))}
+ },
+ toggle(){
+  this.enabled=!this.enabled;
+  if(this.enabled){this.unlock();if(this.ambientGain)this.ambientGain.gain.setTargetAtTime(.045,this.ctx.currentTime,.05)}
+  else if(this.ctx&&this.ambientGain)this.ambientGain.gain.setTargetAtTime(0,this.ctx.currentTime,.04);
+  $('soundBtn').textContent=this.enabled?'소리 O':'무음 O';hud();say(this.enabled?'🔊 소리 켜짐':'🔇 소리 꺼짐');
+ }
+};
+let toastTimer=0;
+function say(msg,sec=2.2){$('toast').textContent=msg;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',sec*1000)}
+function hud(){const n=nearestIsland();const leg=inventory.some(f=>f.legendary);$('hud').innerHTML=`<b>${selected.name} · ${n.island.name}</b><br>${onBoat?'🚤 배 이동 중':'🚶 섬 탐험 중'} ${keys.run?'· 🏃 달리기':''} · ${AudioEngine.enabled?'🔊':'🔇'}<br>💰 ${money}G · 🎒 ${inventory.length}마리 · 낚싯대 Lv.${rodLevel+1}<br>${leg?'🌿 약초물고기 보유<br>':''}<span class="goal">목표: 약초물고기로 엄마 치료</span>`}
+function updateMap(){const rows=islands.map(i=>`${i.type==='home'?'🏠':i.type==='shop'?'🧓':i.type==='port'?'⚓':i.type==='kte'?'🚄':'🏝️'} ${i.name} · ${Math.round(dist(player.x,player.z,i.x,i.z))}m`).join('<br>');$('mapPanel').innerHTML='<b>🗺️ 섬 지도</b><br>'+rows+'<br><br><small>F 낚시 · P 상점 · B 배 · M 엄마 · G 가방 · H 지도 · O 소리</small>'}
+
+// ===== 버전2 방식 키보드 낚시 =====
+const fishing={state:'idle',fish:null,seq:[],idx:0,pool:[]};
+function canFish(){if(onBoat)return true;const n=nearestIsland();return n.d>n.island.r*.58&&n.d<n.island.r+3}
+function chooseFish(){const n=nearestIsland().island;const r=Math.random();if((n.type==='recovery'||n.type==='remote')&&r<.18)return fishTable[6];if(n.type==='glitch'&&r<.32)return fishTable[5];if(n.type==='hacker'&&r<.30)return fishTable[4];if(n.type==='dawn'&&r<.28)return fishTable[3];if(r<.05)return fishTable[6];if(r<.18)return fishTable[3];if(r<.42)return fishTable[2];if(r<.7)return fishTable[1];return fishTable[0]}
+function renderFishSequence(){const box=$('fishSeq');box.innerHTML=fishing.seq.map((k,i)=>i<fishing.idx?`<span class="doneKey">✓</span>`:i===fishing.idx?`<span class="nextKey">${k}</span>`:`<span>${k}</span>`).join(' ');document.querySelectorAll('.fishKey').forEach(b=>b.classList.toggle('current',b.dataset.key===fishing.seq[fishing.idx]))}
+function renderFishButtons(){const box=$('fishKeys');box.innerHTML='';for(const k of fishing.pool){const b=document.createElement('button');b.className='fishKey';b.dataset.key=k;b.textContent=k;b.addEventListener('click',()=>inputFishKey(k));box.appendChild(b)}}
+function startFishing(){if(!started||ended||fishing.state!=='idle')return;if(!canFish()){say('🌊 섬 가장자리 또는 배 위에서 F를 누르세요.');return}AudioEngine.sfx('cast');const f=chooseFish();const pool=f.kind==='glitch'?numberPool:letterPool;const length=Math.max(2,f.len-rodLevel);fishing.state='playing';fishing.fish={...f};fishing.pool=pool;fishing.seq=[];fishing.idx=0;for(let i=0;i<length;i++)fishing.seq.push(pool[Math.floor(Math.random()*pool.length)]);$('fishUI').style.display='block';$('fishIcon').textContent=f.legendary?'🌿':f.kind==='glitch'?'✥':f.kind==='hacker'?'⌁':'🐟';$('fishTitle').textContent=`${f.name} 출현!`;$('fishHelp').textContent='버전2처럼 표시된 키를 왼쪽부터 순서대로 누르세요. 틀리면 도망갑니다.';renderFishButtons();renderFishSequence()}
+function inputFishKey(key){if(fishing.state!=='playing')return;const k=String(key).toUpperCase();if(k===fishing.seq[fishing.idx]){AudioEngine.sfx('key');fishing.idx++;renderFishSequence();if(fishing.idx>=fishing.seq.length)finishFishing()}else{failFishing()}}
+function finishFishing(){const f=fishing.fish;AudioEngine.sfx(f.legendary?'legend':'catch');inventory.push({...f});fishing.state='result';$('fishIcon').textContent=f.legendary?'🌈':'✅';$('fishTitle').textContent=`${f.name}을 잡았습니다!`;$('fishHelp').textContent=f.legendary?'시작섬 엄마에게 가서 M을 누르세요.':`가방에 들어갔습니다. 상점섬에서 P를 눌러 ${f.price}G에 판매할 수 있습니다.`;$('fishSeq').textContent='성공!';$('fishKeys').innerHTML='';save();hud();setTimeout(closeFishing,1400)}
+function failFishing(){AudioEngine.sfx('wrong');fishing.state='result';$('fishIcon').textContent='💨';$('fishTitle').textContent='물고기가 도망갔습니다';$('fishHelp').textContent='다시 F를 눌러 도전하세요.';$('fishSeq').textContent='실패';$('fishKeys').innerHTML='';setTimeout(closeFishing,1000)}
+function closeFishing(){fishing.state='idle';fishing.fish=null;fishing.seq=[];fishing.idx=0;$('fishUI').style.display='none'}
+function updateFishing(){/* 버전2 낚시는 제한시간 없이 키 입력으로 진행 */}
+
+function bagValue(){return inventory.filter(f=>!f.legendary).reduce((s,f)=>s+(Number(f.price)||0),0)}
+function renderBag(){const counts={};for(const f of inventory)counts[f.name]=(counts[f.name]||0)+1;const rows=Object.entries(counts).map(([name,count])=>`<div class="itemRow"><span>${name}</span><b>x${count}</b></div>`).join('');$('bagContents').innerHTML=`<p>총 ${inventory.length}마리 · 판매 예상 ${bagValue()}G</p>${rows||'<p>가방이 비어 있습니다.</p>'}`}
+function toggleBag(){const panel=$('bagPanel');const open=panel.style.display==='block';closeShop();panel.style.display=open?'none':'block';if(!open)renderBag()}
+function closeBag(){$('bagPanel').style.display='none'}
+function nearShop(){const n=nearestIsland();return n.island.type==='shop'&&n.d<n.island.r-1}
+function renderShop(){const sellCount=inventory.filter(f=>!f.legendary).length;$('shopInfo').innerHTML=`<p>보유 골드: <b>${money}G</b></p><p>판매할 물고기: ${sellCount}마리 · ${bagValue()}G</p><p>낚싯대 강화는 키 입력 길이를 1개 줄여 줍니다. 최대 Lv.4</p>`;$('upgradeBtn').textContent=rodLevel>=3?'낚싯대 최고 레벨':`낚싯대 강화 · 300G (Lv.${rodLevel+1} → ${rodLevel+2})`;$('upgradeBtn').disabled=rodLevel>=3}
+function openShop(){if($('shopPanel').style.display==='block'){closeShop();return}if(!nearShop()){say('🧓 상점섬 안에서 P를 누르세요.');return}closeBag();renderShop();$('shopPanel').style.display='block'}
+function closeShop(){$('shopPanel').style.display='none'}
+function sellAll(){if(!nearShop()){closeShop();say('상점섬에서만 판매할 수 있습니다.');return}const list=inventory.filter(f=>!f.legendary);if(!list.length){say('판매할 물고기가 없습니다.');return}const earn=list.reduce((s,f)=>s+f.price,0);inventory=inventory.filter(f=>f.legendary);money+=earn;AudioEngine.sfx('coin');say(`💰 ${list.length}마리를 팔아 ${earn}G를 벌었습니다!`);save();hud();renderShop();renderBag()}
+function upgradeRod(){if(rodLevel>=3){say('낚싯대가 최고 레벨입니다.');return}if(money<300){say('골드가 부족합니다.');return}money-=300;rodLevel++;AudioEngine.sfx('upgrade');say(`🎣 낚싯대 Lv.${rodLevel+1}! 키 입력이 짧아졌습니다.`);save();hud();renderShop()}
+function toggleBoat(){const n=nearestIsland();if(!onBoat){if(n.d<n.island.r*.55){say('🚤 섬 가장자리로 이동한 뒤 B를 누르세요.');return}onBoat=true;boat.x=player.x;boat.z=player.z;boat.yaw=player.yaw;AudioEngine.sfx('boat');say('🚤 배에 탔습니다. WASD로 바다를 이동하세요.')}else{if(n.d>n.island.r+4){say('🏝️ 섬 가까이 간 뒤 B를 눌러 내리세요.');return}onBoat=false;const a=Math.atan2(player.z-n.island.z,player.x-n.island.x);player.x=n.island.x+Math.cos(a)*(n.island.r-4);player.z=n.island.z+Math.sin(a)*(n.island.r-4);AudioEngine.sfx('boat');say(`${n.island.name}에 내렸습니다.`)}save();hud()}
+function talk(){if(dist(player.x,player.z,mom.x,mom.z)>8){say('🏠 시작섬의 엄마 가까이에서 M을 누르세요.');return}const idx=inventory.findIndex(f=>f.legendary);if(idx<0){say('엄마: 약초물고기가 있다면 나을 수 있을 것 같구나…',3);return}inventory.splice(idx,1);ended=true;AudioEngine.sfx('heal');save();say('🌈 약초물고기를 엄마에게 전달했습니다!');setTimeout(()=>$('ending').style.display='flex',900)}
+function jump(){if(player.jumping||onBoat)return;AudioEngine.sfx('jump');player.jumping=true;player.jump=0}
+// ===== 3D 장면 그리기 =====
+function drawTree(x,z,s=1,c=0x247a3e){draw(meshes.cyl,M.trs(x,3*s,z,0,.42*s,3*s,.42*s),0x68401f);draw(meshes.cone,M.trs(x,7.1*s,z,0,2.4*s,3.4*s,2.4*s),c)}
+function drawHouse(x,z,body=0xf0d39a,roof=0xb9483a){draw(meshes.box,M.trs(x,3.0,z,0,5,3,4.2),body);draw(meshes.cone,M.trs(x,7.0,z,0,6.6,3,5.5),roof);draw(meshes.box,M.trs(x,2.4,z+4.25,0,1.1,2.4,.18),0x5a341f)}
+function drawIsland(i,index){draw(meshes.cyl,M.trs(i.x,-.7,i.z,0,i.r+2,1.8,i.r+2),0xe2c67f);draw(meshes.cyl,M.trs(i.x,1.0,i.z,0,i.r,1.25,i.r),i.grass);for(let k=0;k<5;k++){const a=(k*1.77+index*.71),rr=i.r*(.48+.1*((k+index)%3));drawTree(i.x+Math.cos(a)*rr,i.z+Math.sin(a)*rr,.72+(k%2)*.12,i.type==='glitch'?(k%2?0xff4bd8:0x56f5ff):i.type==='hacker'?0x25ff83:0x267f43)}
+ if(i.type==='home')drawHouse(i.x+6,i.z-2);else if(i.type==='shop'){drawHouse(i.x,i.z,0xe6c27b,0x8d4c2b);draw(meshes.box,M.trs(i.x-8,2,i.z+3,0,3,2,2),0xd37b38)}else if(i.type==='port'){for(let p=0;p<7;p++)draw(meshes.box,M.trs(i.x-2+p*2.5,.8,i.z+i.r-1,0,1.1,.25,5),0x8b572d);draw(meshes.cyl,M.trs(i.x-7,5,i.z-3,0,2.3,5,2.3),0xf2f0df);draw(meshes.cone,M.trs(i.x-7,11.5,i.z-3,0,3,2.5,3),0xd94c42)}else if(i.type==='kte'){for(let p=-2;p<=2;p++)draw(meshes.box,M.trs(i.x+p*5,2,i.z,0,2,1.6,3),p%2?0x5f87a9:0xd9e4ed)}
+}
+function drawMom(){const g=M.multiply(M.translate(mom.x,2.4,mom.z),M.rotY(0));draw(meshes.cyl,local(g,0,0,0,0,1.15,2.1,1.15),0xd85f9f);draw(meshes.sphere,local(g,0,3.0,0,0,1.15,1.15,1.15),0xe9b58e);draw(meshes.sphere,local(g,0,3.45,-.12,0,1.2,.55,1.15),0x4a2b21)}
+function pivotLimb(base,x,y,z,angle,length,radius,color,foot=false){
+ let m=M.multiply(base,M.translate(x,y,z));m=M.multiply(m,M.rotX(angle));
+ const shaft=M.multiply(M.multiply(m,M.translate(0,-length,0)),M.scale(radius,length,radius));draw(meshes.cyl,shaft,color);
+ if(foot){const shoe=M.multiply(M.multiply(m,M.translate(0,-length*2+.08,.34)),M.scale(.48,.24,.72));draw(meshes.box,shoe,0x172235)}
+}
+function drawPlayer(){
+ if(onBoat)return;
+ const jumpY=player.jumping?Math.sin(player.jump*Math.PI)*3.2:0;
+ const g=M.multiply(M.translate(player.x,2.25+jumpY,player.z),M.rotY(player.yaw));
+ const amp=player.moving?(keys.run?.72:.43):0,swing=Math.sin(player.step)*amp,bob=player.moving?Math.abs(Math.sin(player.step))*0.12:0;
+ draw(meshes.cyl,local(g,0,3.18+bob,0,0,1.1,1.48,1.0),selected.color);
+ draw(meshes.sphere,local(g,0,5.48+bob,0,0,1.05,1.05,1.05),0xefbd98);
+ draw(meshes.sphere,local(g,0,5.86+bob,-.12,0,1.11,.5,1.06),0x3b2418);
+ pivotLimb(g,-.52,1.88,0,swing,.94,.31,0x25344a,true);
+ pivotLimb(g,.52,1.88,0,-swing,.94,.31,0x25344a,true);
+ pivotLimb(g,-1.12,4.28+bob,0,-swing*.78,.78,.24,0xefbd98,false);
+ pivotLimb(g,1.12,4.28+bob,0,swing*.78,.78,.24,0xefbd98,false);
+}
+function drawBoat(){const x=onBoat?player.x:boat.x,z=onBoat?player.z:boat.z,yaw=onBoat?player.yaw:boat.yaw;const g=M.multiply(M.translate(x,1.2,z),M.rotY(yaw));draw(meshes.box,local(g,0,0,0,0,2.7,.65,5.3),0x72411f);draw(meshes.box,local(g,0,.85,.4,0,1.7,.55,3.4),0xd0a45e);draw(meshes.cyl,local(g,0,3.2,.8,0,.16,2.8,.16),0x5c371f);draw(meshes.box,local(g,1.15,3.5,.8,0,1.2,2.2,.08),0xf2eee0)}
+function drawFishingRod(){if(fishing.state==='idle')return;const x=player.x,z=player.z,y=onBoat?4.5:6.1;const fx=Math.sin(player.yaw),fz=Math.cos(player.yaw);const tipX=x+fx*8,tipZ=z+fz*8;const g=M.multiply(M.translate(x,y,z),M.rotY(player.yaw));draw(meshes.box,local(g,0,0,4,0,.10,.10,4),0x4b2b16);draw(meshes.cyl,M.trs(tipX,2.2,tipZ,0,.045,2.1,.045),0xe9f5f8);draw(meshes.sphere,M.trs(tipX,.25,tipZ,0,.28,.28,.28),0xff4d4d)}
+function renderScene(){gl.clearColor(.36,.72,.88,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.uniform1f(loc.time,time);draw(meshes.plane,M.trs(0,-1.9,0,0,420,1,420),0x117eae,1);for(let i=0;i<islands.length;i++)drawIsland(islands[i],i);drawMom();drawBoat();drawPlayer();drawFishingRod()}
+
+function resize(){DPR=Math.min(devicePixelRatio||1,1.7);W=Math.floor(innerWidth*DPR);H=Math.floor(innerHeight*DPR);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';gl.viewport(0,0,W,H)}const proj=M.perspective(Math.PI/3,W/H,.1,900);gl.uniformMatrix4fv(loc.proj,false,proj)}
+function updateCamera(dt){const fx=Math.sin(player.yaw),fz=Math.cos(player.yaw);let ex,ey,ez,tx=player.x,ty=3,tz=player.z;if(wideView){ex=player.x-fx*20;ey=36;ez=player.z-fz*20;ty=0}else{ex=player.x-fx*18;ey=13;ez=player.z-fz*18}const k=1-Math.pow(.001,dt);camera.x+=(ex-camera.x)*k;camera.y+=(ey-camera.y)*k;camera.z+=(ez-camera.z)*k;camera.tx+=(tx-camera.tx)*k;camera.ty+=(ty-camera.ty)*k;camera.tz+=(tz-camera.tz)*k;gl.uniformMatrix4fv(loc.view,false,M.lookAt([camera.x,camera.y,camera.z],[camera.tx,camera.ty,camera.tz]))}
+function updateMovement(dt){
+ player.moving=false;
+ if(!started||ended||fishing.state!=='idle')return;
+ let dx=keys.r-keys.l,dz=keys.d-keys.u;
+ if(dx||dz){
+  const l=Math.hypot(dx,dz);dx/=l;dz/=l;const speed=(onBoat?18:(keys.run?14:9))*dt;const nx=player.x+dx*speed,nz=player.z+dz*speed;
+  let moved=false;
+  if(onBoat){player.x=nx;player.z=nz;boat.x=nx;boat.z=nz;moved=true}
+  else{const land=islandAt(nx,nz,1.5);if(land){player.x=nx;player.z=nz;moved=true}}
+  if(moved){player.moving=true;player.yaw=Math.atan2(dx,dz);player.step+=dt*(keys.run?10.5:7.2);player.footTimer-=dt;if(!onBoat&&player.footTimer<=0){AudioEngine.sfx(keys.run?'run':'step');player.footTimer=keys.run?.23:.37}}
+ }
+ player.x=Math.max(-190,Math.min(190,player.x));player.z=Math.max(-175,Math.min(175,player.z));
+ if(player.jumping){player.jump+=dt*1.65;if(player.jump>=1){player.jump=0;player.jumping=false}}
+}
+function loop(now){const dt=Math.min(.04,(now-last)/1000||.016);last=now;time+=dt;resize();updateMovement(dt);updateFishing(dt);updateCamera(dt);renderScene();requestAnimationFrame(loop)}
+
+// ===== 입력 연결 =====
+function setMove(k,v){keys[k]=v}
+document.querySelectorAll('[data-move]').forEach(b=>{const k=b.dataset.move;const down=e=>{e.preventDefault();setMove(k,1);b.classList.add('pressed')},up=e=>{e.preventDefault();setMove(k,0);b.classList.remove('pressed')};b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up)});
+const keyMap={ArrowUp:'u',w:'u',W:'u',ArrowDown:'d',s:'d',S:'d',ArrowLeft:'l',a:'l',A:'l',ArrowRight:'r',d:'r',D:'r'};
+addEventListener('keydown',e=>{
+ if(fishing.state==='playing'){
+   const k=e.key.toUpperCase();
+   if(letterPool.includes(k)||numberPool.includes(k)){e.preventDefault();if(!e.repeat)inputFishKey(k)}
+   return;
+ }
+ if(keyMap[e.key]){keys[keyMap[e.key]]=1;e.preventDefault()}
+ if(e.key==='Shift')keys.run=1;
+ if(e.repeat)return;
+ if(e.key==='f'||e.key==='F')startFishing();
+ else if(e.key==='p'||e.key==='P')openShop();
+ else if(e.key==='b'||e.key==='B')toggleBoat();
+ else if(e.key==='m'||e.key==='M')talk();
+ else if(e.key==='g'||e.key==='G')toggleBag();
+ else if(e.key==='h'||e.key==='H')toggleMap();
+ else if(e.key==='v'||e.key==='V')toggleView();
+ else if(e.key==='o'||e.key==='O')AudioEngine.toggle();
+ else if(e.code==='Space'){jump();e.preventDefault()}
+});
+addEventListener('keyup',e=>{if(keyMap[e.key])keys[keyMap[e.key]]=0;if(e.key==='Shift')keys.run=0;hud()});
+$('fishBtn').addEventListener('click',startFishing);$('shopBtn').addEventListener('click',openShop);$('boatBtn').addEventListener('click',toggleBoat);$('talkBtn').addEventListener('click',talk);$('bagBtn').addEventListener('click',toggleBag);$('jumpBtn').addEventListener('click',jump);$('soundBtn').addEventListener('click',()=>AudioEngine.toggle());
+$('sellAllBtn').addEventListener('click',sellAll);$('upgradeBtn').addEventListener('click',upgradeRod);$('bagClose').addEventListener('click',closeBag);$('shopClose').addEventListener('click',closeShop);
+$('runBtn').addEventListener('pointerdown',()=>{keys.run=1;$('runBtn').classList.add('pressed');hud()});['pointerup','pointercancel','pointerleave'].forEach(ev=>$('runBtn').addEventListener(ev,()=>{keys.run=0;$('runBtn').classList.remove('pressed');hud()}));
+function toggleMap(){mapOpen=!mapOpen;updateMap();$('mapPanel').style.display=mapOpen?'block':'none'}$('mapBtn').addEventListener('click',toggleMap);
+function toggleView(){wideView=!wideView;say(wideView?'🔭 높은 시점':'🎥 가까운 3D 시점')} $('viewBtn').addEventListener('click',toggleView);
+document.querySelectorAll('.char').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.char').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');selected={name:b.dataset.name,color:Number(b.dataset.color)}}));
+$('go').addEventListener('click',()=>{AudioEngine.unlock();started=true;$('start').style.display='none';load();hud();say('🏃 다리가 자연스럽게 움직입니다. Shift 달리기 · F 키보드 낚시 · O 소리',3);save()});
+$('resetBtn').addEventListener('click',resetGame);
+addEventListener('resize',resize);document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.u=keys.d=keys.l=keys.r=keys.run=0}});
+load();hud();resize();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
